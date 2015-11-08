@@ -4,6 +4,5 @@ $(function() {
     if(!metadata) {
         var controller = new Controller();
         controller.init(metadata);
-
     }
 });

@@ -13,6 +13,8 @@ Controller.prototype = {
         //varibles
         this.vars = [];
 
+        this.cnt = 0;
+
         //if first time come
         if (!this.model) {
             //
@@ -35,16 +37,20 @@ Controller.prototype = {
                 $("#app").html(this.views[page](this.curVal.numOfInd, this.curVal.name));
                 break;
             case 'inputDataPage':
-                $("#app").html(this.views[page](this.curVal.inds, this.curVal.name));
+                $("#app").html(this.views[page](this.curVal.inds, this.curVal.name, this.curVal.seq[this.curVal.cnt]));
                 this.curVal.setChart();
                 break;
-            case 'DownloadPage':
+            case 'downloadPage':
                 $("#app").html(this.views[page]());
                 break;
             default:
-                console.error("wrong page name!");
+                console.error("wrong page name! " + page);
                 break;
         }
+
+    },
+
+    renderPartial: function() {
 
     },
 
@@ -61,7 +67,7 @@ Controller.prototype = {
                 self.vars.push(v);
             }
 
-            self.curVal = self.vars.shift();
+            self.curVal = self.vars[self.cnt];
 
             self.render("inputIndPage");
         });
@@ -71,10 +77,10 @@ Controller.prototype = {
             var len = $("#var-num").val();
             $(".var-info").remove();
             for (var i = 0; i < len; i++) {
-                $('<div class="form-group form-inline var-info" id="var-info-' + i + '" style="border: 1px solid black; padding: 10px;">' +
+                $('<div class="form-group  var-info" id="var-info-' + i + '" >' +
                     '<label>Variable Name</label>' +
                     '<input type="text" class="form-control"  name="var-name-' + i + '" required>' +
-                    '<label>Number of Indices</label>' +
+                    '<label>Number of Subscripts</label>' +
                     '<input type="number" class="form-control" max="2" min="0" name="num-ind-' + i + '" required>' +
                     '</div>').insertBefore($("#general-info button"));
             }
@@ -109,15 +115,35 @@ Controller.prototype = {
         			if (val) data.push(parseInt(val));
         		});
 
-        		if(data.length != self.curVal.numOfInd) return;
+        		//if(data.length != self.curVal.numOfInd) return;
         		$(".data-val").each(function() {
         			$(this).val("");
         		});
-        		console.log(data);
+        		//console.log(data);
         		self.curVal.chart.series[0].addPoint(data);
+                self.curVal.addData(data);
+                console.log(data);
         	}
         });
 
+        $("#app").on("click", ".next-chart", function(evt) {
+
+            var next = self.curVal.next();
+            if(!next) {
+                if(self.cnt == self.vars.length-1) {
+                    self.render("downloadPage");
+                    return;
+                }
+                self.cnt++;
+                self.curVal = self.vars[self.cnt];
+                self.render("inputIndPage");
+
+                return;
+            }
+
+            self.render("inputDataPage");
+
+        });
 
 
 
@@ -137,41 +163,49 @@ Variable.prototype = {
         this.name = name;
         this.numOfInd = numOfInd;
         this.cnt = 0;
+        this.data = {};
     },
 
     //indArr [{name: ind1, num: 10}, ...]
     setIndInfo: function(indArr) {
-        if (indArr.length == 0) return;
+        if (indArr.length == 0 || indArr.length >= 3) return;
         this.inds = indArr;
-        this.total = indArr.reduce(function(accum, ind) {
-            return accum * ind.num;
-        }, 1);
-
+        // this.total = indArr.reduce(function(accum, ind) {
+        //     return accum * ind.num;
+        // }, 1);
+        this.seq = [];
         if (indArr.length == 2) {
-            this.seq = [];
+
             for (var i = 0; i < indArr[0].num; i++) {
                 for (var j = 0; j < indArr[1].num; j++) {
                     this.seq.push([i, j]);
+                    this.data["e"+i+"-"+j] = [];
                 }
+            }
+        } else {
+            for(var i = 0; i < indArr[0].num; i++) {
+                this.seq.push(i);
+                this.data["e"+i] = [];
             }
         }
     },
 
     next: function() {
-        if (this.cnt == total) {
-
+        if (this.cnt == this.seq.length-1) {
+            return false;
         }
+        console.log(this.cnt);
 
         this.cnt++;
+        return true;
     },
 
-    inputIndices: function() {
-
+    addData: function(data) {
+        var cur = this.seq[this.cnt];
+        //console.log(this.seq);
+        this.indArr.length === 1 ? this.data["e"+cur].push(data) : this.data["e"+cur[0]+"-"+cur[1]].push(data);
     },
 
-    render: function() {
-
-    },
 
     setChart: function() {
         $('#chart').highcharts({
@@ -181,7 +215,8 @@ Variable.prototype = {
             },
             xAxis: {
                 title: {
-                    text: this.inds[0].name+'()'
+                    //text: this.inds[0].name+'()'
+                    text: "t"
                 },
                 plotLines: [{
                     value: 0,
@@ -191,7 +226,8 @@ Variable.prototype = {
             },
             yAxis: {
                 title: {
-                    text: this.inds[1] ? this.inds[1].name+'()' : 'y()'
+                    //text: this.inds[1] ? this.inds[1].name+'()' : 'y()'
+                    text: "v(t)"
                 },
                 plotLines: [{
                     value: 0,
