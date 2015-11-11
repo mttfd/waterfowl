@@ -37,3 +37,22 @@
 	border-radius: 3px;
 	padding: 2.5%;
 }
+
+#side-nav .var-link {
+	color: #5f5f5f;
+	cursor: pointer;
+}
+
+#side-nav .var-link:hover {
+	color: #000;
+}
+
+#side-nav .var-del {
+	color: #5f5f5f;
+	cursor: pointer;
+	float: right;
+}
+
+#side-nav .var-del:hover {
+	color: #000;
+}

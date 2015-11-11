@@ -65,6 +65,7 @@ Controller.prototype = {
                 var v = new Variable();
                 v.init(formData[i].value, formData[i + 1].value);
                 self.vars.push(v);
+                $("#side-nav .list-group").append("<li class='list-group-item'><span class='var-link'>"+formData[i].value+"</span><span class='var-del'>×</span></li>");
             }
 
             self.curVal = self.vars[self.cnt];
@@ -76,6 +77,13 @@ Controller.prototype = {
             // alert("Asd");
             var len = $("#var-num").val();
             $(".var-info").remove();
+            if(len > 20 || len < 0) {
+                $('<p class="err-msg">The number of variable should be in the range of 0 - 20.</p>').insertBefore($("#general-info button"));
+                // setTimeout(function() {
+                //     $(".err-msg").remove();
+                // }, 2000);
+                return false;
+            }
             for (var i = 0; i < len; i++) {
                 $('<div class="form-group  var-info" id="var-info-' + i + '" >' +
                     '<label>Variable Name</label>' +
@@ -145,6 +153,28 @@ Controller.prototype = {
 
         });
 
+        $("#app").on("click", ".prev-chart", function(evt) {
+
+            var prev = self.curVal.prev();
+            if(!prev) {
+
+                // self.cnt++;
+                // self.curVal = self.vars[self.cnt];
+                // self.render("inputIndPage");
+
+                return;
+            }
+
+            self.render("inputDataPage");
+
+        });
+
+        $("#side-nav ul").on("click", ".var-link", function(evt) {
+            // for(var i = 0; i < 10)
+            self.curVal = self.vars[self.cnt];
+            self.render("inputIndPage");
+        });
+
 
 
     }
@@ -200,10 +230,19 @@ Variable.prototype = {
         return true;
     },
 
+    prev: function() {
+        if(this.cnt === 0) {
+            return false;
+        }
+
+        this.cnt--;
+        return true;
+    },
+
     addData: function(data) {
         var cur = this.seq[this.cnt];
         //console.log(this.seq);
-        this.indArr.length === 1 ? this.data["e"+cur].push(data) : this.data["e"+cur[0]+"-"+cur[1]].push(data);
+        this.data["e"+cur[0]+"-"+cur[1]].push(data);
     },
 
 
