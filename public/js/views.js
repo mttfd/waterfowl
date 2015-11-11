@@ -24,19 +24,23 @@ function Views() {
 	            '</div>';
 		},
 
-		inputIndPage: function(numOfInd, varName) {
+		inputIndPage: function(curVal) {
 			var str = '';
-			for(var i = 0; i < numOfInd; i++) {
+			var initiated = (curVal.inds.length !== 0);
+
+			for(var i = 0; i < curVal.numOfInd; i++) {
 				str += '<div class="form-group form-inline">' +
 	                        '<label >Name of subscript</label>' +
-	                        '<input type="text" class="form-control ind-name" name="ind-name-' + i + '" required>' +
+	                        '<input type="text" class="form-control ind-name" value="' + (initiated ? curVal.inds[i].name : "") +
+	                        '" name="ind-name-' + i + '" required >' +
 	                        '<label>Number</label>' +
-	                        '<input type="number" class="form-control ind-num" name="ind-num-' + i + '" min="0" max="10" required>' +
+	                        '<input type="number" class="form-control ind-num" value="' + (initiated ? curVal.inds[i].num : "") +
+	                        '" name="ind-num-' + i + '" min="0" max="10" required>' +
 	                    '</div>';
 			}
 
 			return '<div class="col-md-8">' +
-					'<h2>' +  varName + '</h2>' +
+					'<h2>' +  curVal.name + '</h2>' +
 	                '<form id="var-info">' +
 	                        str + '<button type="submit" class="btn btn-default">go</button>' +
 	                '</form>' +

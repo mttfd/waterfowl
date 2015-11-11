@@ -8,12 +8,15 @@ Controller.prototype = {
         //creat view
         this.views = Views();
         //create model
-        this.model = model;
+        this.model = Model();
 
         //varibles
         this.vars = [];
 
         this.cnt = 0;
+
+
+
 
         //if first time come
         if (!this.model) {
@@ -23,6 +26,7 @@ Controller.prototype = {
             //render view
             this.render("initPage");
             this.curVar = null;
+
         }
 
         //register events
@@ -34,7 +38,7 @@ Controller.prototype = {
                 $("#app").html(this.views[page]());
                 break;
             case 'inputIndPage':
-                $("#app").html(this.views[page](this.curVal.numOfInd, this.curVal.name));
+                $("#app").html(this.views[page](this.curVal));
                 break;
             case 'inputDataPage':
                 $("#app").html(this.views[page](this.curVal.inds, this.curVal.name, this.curVal.seq[this.curVal.cnt]));
@@ -170,8 +174,21 @@ Controller.prototype = {
         });
 
         $("#side-nav ul").on("click", ".var-link", function(evt) {
-            // for(var i = 0; i < 10)
-            self.curVal = self.vars[self.cnt];
+
+            // var $this = this;
+            // self.curVal = self.vars.filter(function(v) {
+            //     return v.name == $($this).html();
+            // })[0];
+
+            for(var i = 0; i < self.vars.length; i++) {
+                if(self.vars[i].name == $(this).html()) {
+                    self.curVal = self.vars[i];
+                    self.cnt = i;
+                    break;
+                }
+            }
+
+
             self.render("inputIndPage");
         });
 
@@ -194,6 +211,7 @@ Variable.prototype = {
         this.numOfInd = numOfInd;
         this.cnt = 0;
         this.data = {};
+        this.inds = [];
     },
 
     //indArr [{name: ind1, num: 10}, ...]
