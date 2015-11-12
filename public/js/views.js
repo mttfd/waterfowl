@@ -47,15 +47,22 @@ function Views() {
 	            '</div>';
 		},
 
-		inputDataPage: function(indArr, varName, cnt) {
+		inputDataPage: function(curVal) {
+			var indArr = curVal.inds;
+			var varName = curVal.name;
+			var cnt = curVal.seq[curVal.cnt];
 			var numOfInd = indArr.length;
 			var varArr = ['t', 'v(t)'];
 			var str = '', subs = '';
 
+
+
 			var singleSuffix = !Array.isArray(cnt);
 
+			//var graphDataList =  singleSuffix ? curVal.data["e"+cnt] : curVal.data["e"+cur[0]+"-"+cur[1]];
+
 			for(var i = 0; i < varArr.length; i++) {
-				str += '<div class="form-group form-inline">' +
+				str += '<div class="form-group form-inline value-input">' +
 	                        '<label>' + varArr[i] + '</label>' +
 	                        '<input type="text" class="form-control data-val" required>' +
 	                    '</div>';

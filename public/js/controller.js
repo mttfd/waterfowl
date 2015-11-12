@@ -32,7 +32,7 @@ Controller.prototype = {
         //register events
         this.registerEvt();
     },
-    render: function(page) {
+    render: function(page, afterRender) {
         switch (page) {
             case 'initPage':
                 $("#app").html(this.views[page]());
@@ -41,7 +41,7 @@ Controller.prototype = {
                 $("#app").html(this.views[page](this.curVal));
                 break;
             case 'inputDataPage':
-                $("#app").html(this.views[page](this.curVal.inds, this.curVal.name, this.curVal.seq[this.curVal.cnt]));
+                $("#app").html(this.views[page](this.curVal));
                 this.curVal.setChart();
                 break;
             case 'downloadPage':
@@ -51,6 +51,8 @@ Controller.prototype = {
                 console.error("wrong page name! " + page);
                 break;
         }
+
+        if(afterRender && (typeof afterRender === 'function')) afterRender();
 
     },
 
@@ -104,16 +106,22 @@ Controller.prototype = {
             evt.preventDefault();
             var formData = $('#var-info').serializeArray();
 
-            var inds = [];
-            for (var i = 0; i < formData.length; i += 2) {
-                inds.push({
-                    name: formData[i].value,
-                    num: formData[i + 1].value
-                });
+            //到时候需要改成self.curVal.equals(新的var)
+            if(self.curVal.inds.length === 0) {
+                var inds = [];
+                for (var i = 0; i < formData.length; i += 2) {
+                    inds.push({
+                        name: formData[i].value,
+                        num: formData[i + 1].value
+                    });
+                }
+                self.curVal.setIndInfo(inds);
             }
-            self.curVal.setIndInfo(inds);
-            console.log(self.curVal.inds);
-            self.render("inputDataPage");
+
+            console.dir(self.vars);
+            self.render("inputDataPage", function() {
+                self.curVal.drawPoints(self.curVal.getData());
+            });
         });
 
 
@@ -124,15 +132,18 @@ Controller.prototype = {
         		var data = [];
         		$(".data-val").each(function() {
         			var val = $(this).val().trim();
-        			if (val) data.push(parseInt(val));
+        			if (val) data.push(parseFloat(val));
         		});
 
         		//if(data.length != self.curVal.numOfInd) return;
         		$(".data-val").each(function() {
         			$(this).val("");
         		});
+
+                $(".value-input:first-child input").focus();
         		//console.log(data);
-        		self.curVal.chart.series[0].addPoint(data);
+                self.curVal.drawPoint(data);
+
                 self.curVal.addData(data);
                 console.log(data);
         	}
@@ -149,11 +160,13 @@ Controller.prototype = {
                 self.cnt++;
                 self.curVal = self.vars[self.cnt];
                 self.render("inputIndPage");
-
+                console.dir(self.vars);
                 return;
             }
 
-            self.render("inputDataPage");
+            self.render("inputDataPage", function() {
+                self.curVal.drawPoints(self.curVal.getData());
+            });
 
         });
 
@@ -169,16 +182,13 @@ Controller.prototype = {
                 return;
             }
 
-            self.render("inputDataPage");
+            self.render("inputDataPage", function() {
+                self.curVal.drawPoints(self.curVal.getData());
+            });
 
         });
 
         $("#side-nav ul").on("click", ".var-link", function(evt) {
-
-            // var $this = this;
-            // self.curVal = self.vars.filter(function(v) {
-            //     return v.name == $($this).html();
-            // })[0];
 
             for(var i = 0; i < self.vars.length; i++) {
                 if(self.vars[i].name == $(this).html()) {
@@ -187,7 +197,6 @@ Controller.prototype = {
                     break;
                 }
             }
-
 
             self.render("inputIndPage");
         });
@@ -240,6 +249,7 @@ Variable.prototype = {
 
     next: function() {
         if (this.cnt == this.seq.length-1) {
+            this.cnt = 0;
             return false;
         }
         console.log(this.cnt);
@@ -259,12 +269,47 @@ Variable.prototype = {
 
     addData: function(data) {
         var cur = this.seq[this.cnt];
-        //console.log(this.seq);
-        this.data["e"+cur[0]+"-"+cur[1]].push(data);
+        console.log(this.seq);
+        var curDataList = Array.isArray(cur) ? "e"+cur[0]+"-"+cur[1] : "e"+cur;
+        this.data[curDataList].push(data);
+    },
+
+
+
+    removePoint: function(data) {
+        var cur = this.seq[this.cnt];
+        var curDataList = Array.isArray(cur) ? "e"+cur[0]+"-"+cur[1] : "e"+cur;
+
+        for(var i = 0; i < this.chart.series[0].data.length; i++) {
+            console.log(data.x + " " + this.chart.series[0].data[i].x + " | " +  data.y + " " + this.chart.series[0].data[i].y);
+            if(data.x === this.chart.series[0].data[i].x && data.y === this.chart.series[0].data[i].y) {
+                this.chart.series[0].data[i].remove();
+                this.data[curDataList].splice(i, 1);
+            }
+        }
+    },
+
+    drawPoint: function(data) {
+        this.chart.series[0].addPoint(data);
+    },
+
+    drawPoints: function(data) {
+        for(var i = 0; i < data.length; i++) {
+            this.drawPoint(data[i]);
+        }
+    },
+
+    getData: function() {
+        var indArr = this.inds;
+        var varName = this.name;
+        var cnt = this.seq[this.cnt];
+        var singleSuffix = !Array.isArray(cnt);
+        return  singleSuffix ? this.data["e"+cnt] : this.data["e"+cnt[0]+"-"+cnt[1]];
     },
 
 
     setChart: function() {
+        var self = this;
         $('#chart').highcharts({
             title: {
                 text: 'Waterfowl Food Energy',
@@ -272,7 +317,6 @@ Variable.prototype = {
             },
             xAxis: {
                 title: {
-                    //text: this.inds[0].name+'()'
                     text: "t"
                 },
                 plotLines: [{
@@ -283,7 +327,6 @@ Variable.prototype = {
             },
             yAxis: {
                 title: {
-                    //text: this.inds[1] ? this.inds[1].name+'()' : 'y()'
                     text: "v(t)"
                 },
                 plotLines: [{
@@ -294,6 +337,25 @@ Variable.prototype = {
             },
             tooltip: {
                 valueSuffix: 'kg'
+            },
+            plotOptions: {
+                series: {
+                    cursor: 'pointer',
+                    point: {
+                        events: {
+                            click: function (e) {
+                                $(".value-input:first-child input").val(this.x);
+                                $(".value-input:nth-child(2) input").val(this.y);
+
+                                self.removePoint(this);
+                                $(".value-input:first-child input").focus();
+                            }
+                        }
+                    },
+                    marker: {
+                        lineWidth: 1
+                    }
+                }
             },
             legend: {
                 layout: 'vertical',
